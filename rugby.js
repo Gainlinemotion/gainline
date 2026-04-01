@@ -1,15 +1,11 @@
 function rugbyAnalysis(ax, ay, az) {
-
-    let accelMag = [];
+    let mag = [];
 
     for (let i = 0; i < ax.length; i++) {
-        const mag = Math.sqrt(ax[i]**2 + ay[i]**2 + az[i]**2);
-        accelMag.push(mag);
+        mag.push(Math.sqrt(ax[i]**2 + ay[i]**2 + az[i]**2));
     }
 
-    const smooth = movingAverage(accelMag, 5);
-
-    const peak = Math.max(...smooth);
+    const smooth = movingAverage(mag);
 
     let impacts = 0;
     const THRESHOLD = 15;
@@ -20,5 +16,8 @@ function rugbyAnalysis(ax, ay, az) {
         }
     }
 
-    return { impacts, peak };
+    return {
+        impacts,
+        peak: Math.max(...smooth)
+    };
 }
