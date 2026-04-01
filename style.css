@@ -1,76 +1,59 @@
-body {
-    background-color: #0a192f;
-    color: white;
-    font-family: Arial, sans-serif;
-    margin: 0;
-    text-align: center;
+.session-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
-h1 {
-    padding: 20px;
-}
-
-input {
-    margin: 20px;
-    padding: 10px;
-    background-color: #112240;
+button {
+    background-color: #1c7ed6;
     color: white;
     border: none;
+    padding: 8px 12px;
     border-radius: 6px;
-}
-
-.stats-row {
-    display: flex;
-    justify-content: center;
-    gap: 20px;
-    flex-wrap: wrap;
-}
-
-.card {
-    background-color: #112240;
-    border-radius: 12px;
-    padding: 20px;
-    margin: 20px auto;
-    width: 90%;
-    max-width: 900px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.4);
-}
-
-.stat-card {
-    width: 200px;
-}
-
-.stat-card p {
-    font-size: 24px;
-    font-weight: bold;
-    color: #4dabf7;
-}
-
-canvas {
-    width: 100% !important;
-    height: 300px !important;
-}
-
-#map {
-    height: 400px;
-    width: 100%;
-    border-radius: 10px;
-}
-#sessionList {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.session-item {
-    background-color: #0a192f;
-    padding: 12px;
-    border-radius: 8px;
     cursor: pointer;
+}
+
+button:hover {
+    background-color: #4dabf7;
+}
+
+/* SESSION CARDS */
+.session-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #0a192f;
+    padding: 14px;
+    border-radius: 10px;
     border: 1px solid #1c7ed6;
+    cursor: pointer;
     transition: 0.2s;
 }
 
-.session-item:hover {
-    background-color: #1c7ed6;
+.session-card:hover {
+    background-color: #112240;
+    transform: scale(1.01);
+}
+
+.session-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.session-stats {
+    display: flex;
+    gap: 15px;
+    color: #4dabf7;
+}
+
+.delete-btn {
+    background: none;
+    color: red;
+    font-size: 16px;
+}
+
+/* PERFORMANCE */
+.performance-grid {
+    display: flex;
+    justify-content: space-around;
 }
