@@ -26,74 +26,74 @@ function processCSV(data) {
 
     let maxSpeed = 0;
     let speeds = [];
-    let labels = [];
+    let speedLabels = [];
+
+    let accelData = [];
+    let accelLabels = [];
+
     let coordinates = [];
+
+    let impactCount = 0;
 
     for (let i = 1; i < lines.length; i++) {
         const row = lines[i].trim().split(",");
 
-        if (row.length < 4) continue;
+        if (row.length < 7) continue;
 
         const time = row[0];
         const lat = parseFloat(row[1]);
         const lon = parseFloat(row[2]);
         const speed = parseFloat(row[3]);
 
+        const ax = parseFloat(row[4]);
+        const ay = parseFloat(row[5]);
+        const az = parseFloat(row[6]);
+
+        // SPEED
         if (!isNaN(speed)) {
             speeds.push(speed);
-            labels.push(time);
+            speedLabels.push(time);
 
             if (speed > maxSpeed) {
                 maxSpeed = speed;
             }
         }
 
+        // ACCELERATION (magnitude)
+        if (!isNaN(ax) && !isNaN(ay) && !isNaN(az)) {
+            const accel = Math.sqrt(ax*ax + ay*ay + az*az);
+
+            accelData.push(accel);
+            accelLabels.push(time);
+
+            // IMPACT DETECTION
+            if (accel > 15) {
+                impactCount++;
+            }
+        }
+
+        // GPS
         if (!isNaN(lat) && !isNaN(lon)) {
             coordinates.push([lat, lon]);
         }
     }
 
-    console.log("Parsed speeds:", speeds);
-    console.log("Parsed coords:", coordinates);
-
-    // REAL DISTANCE
+    // DISTANCE
     const distance = calculateDistance(coordinates);
 
     document.getElementById("maxSpeed").textContent = maxSpeed.toFixed(2) + " m/s";
     document.getElementById("distance").textContent = distance.toFixed(2) + " km";
 
-    drawChart(labels, speeds);
+    // DRAW
+    drawChart(speedLabels, speeds);
+    drawAccelChart(accelLabels, accelData);
 
     if (coordinates.length > 0) {
         drawMap(coordinates);
     }
+
+    console.log("Impacts:", impactCount);
 }
-
-// GRAPH
-function drawChart(labels, data) {
-    const ctx = document.getElementById("speedChart").getContext("2d");
-
-    if (chart) {
-        chart.destroy();
-    }
-
-    chart = new Chart(ctx, {
-        type: "line",
-        data: {
-            labels: labels,
-            datasets: [{
-                label: "Speed (m/s)",
-                data: data,
-                borderWidth: 2,
-                tension: 0.3
-            }]
-        },
-        options: {
-            responsive: true
-        }
-    });
-}
-
 // MAP
 function drawMap(coords) {
     if (!map) {
@@ -109,6 +109,26 @@ function drawMap(coords) {
     polyline = L.polyline(coords, { color: 'blue' }).addTo(map);
 
     map.fitBounds(polyline.getBounds());
+}
+//Acceleration
+function drawAccelChart(labels, data) {
+    const ctx = document.getElementById("accelChart").getContext("2d");
+
+    new Chart(ctx, {
+        type: "line",
+        data: {
+            labels: labels,
+            datasets: [{
+                label: "Acceleration (m/s²)",
+                data: data,
+                borderWidth: 2,
+                tension: 0.3
+            }]
+        },
+        options: {
+            responsive: true
+        }
+    });
 }
 
 // HAVERSINE DISTANCE
