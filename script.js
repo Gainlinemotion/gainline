@@ -49,15 +49,19 @@ function processCSV(data) {
         row = row.replace(/"/g, "");
         const cols = row.split(",");
 
-        if (cols.length < 7) continue;
+        if (cols.length < 4) continue;
 
         const time = cols[0];
         const lat = parseFloat(cols[1]);
         const lon = parseFloat(cols[2]);
         const speed = parseFloat(cols[3]);
-        const ax = parseFloat(cols[4]);
-        const ay = parseFloat(cols[5]);
-        const az = parseFloat(cols[6]);
+       let ax = NaN, ay = NaN, az = NaN;
+
+if (cols.length >= 7) {
+    ax = parseFloat(cols[4]);
+    ay = parseFloat(cols[5]);
+    az = parseFloat(cols[6]);
+}
 
         // SPEED
         if (!isNaN(speed)) {
@@ -143,22 +147,40 @@ function drawAccelChart(labels, ax, ay, az) {
 // =========================
 
 function drawMap(coords) {
-    if (!coords.length) return;
+    console.log("coords count:", coords.length);
 
-    const first = coords.find(c => !isNaN(c[0]) && !isNaN(c[1]));
-    if (!first) return;
+    if (!coords || coords.length === 0) {
+        console.log("❌ No coordinates");
+        return;
+    }
+
+    const cleanCoords = coords.filter(c =>
+        Array.isArray(c) &&
+        !isNaN(c[0]) &&
+        !isNaN(c[1])
+    );
+
+    if (cleanCoords.length === 0) {
+        console.log("❌ No valid coords");
+        return;
+    }
 
     if (!map) {
-        map = L.map('map').setView(first, 15);
+        map = L.map('map').setView(cleanCoords[0], 15);
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
     }
 
     if (polyline) {
         map.removeLayer(polyline);
     }
 
-    polyline = L.polyline(coords, { color: "#4dabf7" }).addTo(map);
+    polyline = L.polyline(cleanCoords, {
+        color: "#4dabf7",
+        weight: 4
+    }).addTo(map);
 
     map.fitBounds(polyline.getBounds());
 
