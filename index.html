@@ -2,11 +2,18 @@
 <html>
 <head>
     <title>Gainline</title>
+
+    <!-- CSS -->
     <link rel="stylesheet" href="style.css">
+
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Leaflet -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 </head>
+
 <body>
 
 <header>
@@ -15,11 +22,13 @@
 
 <div class="container">
 
+    <!-- Upload -->
     <div class="card">
         <div class="label">Upload Session</div>
         <input type="file" id="fileInput">
     </div>
 
+    <!-- Stats -->
     <div class="card">
         <div class="label">Distance</div>
         <div class="stat" id="distance">--</div>
@@ -29,17 +38,25 @@
         <div class="label">Max Speed</div>
         <div class="stat" id="maxSpeed">--</div>
     </div>
+
+    <!-- Graph -->
     <div class="card">
         <div class="label">Speed Graph</div>
         <canvas id="speedChart"></canvas>
-</div>
+    </div>
+
+    <!-- Map -->
     <div class="card">
-    <div class="label">Route Map</div>
-    <div id="map" style="height: 300px;"></div>
-</div>
+        <div class="label">Route Map</div>
+        <div id="map" style="height: 300px;"></div>
+    </div>
 
 </div>
 
+<!-- JS LAST -->
 <script src="script.js"></script>
+
+</body>
+</html>
 </body>
 </html>
