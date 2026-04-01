@@ -1,27 +1,13 @@
 console.log("script loaded");
 
+// =========================
+// GLOBALS
+// =========================
 let speedChart;
 let accelChart;
 let map;
 let polyline;
 
-// =========================
-// FILE UPLOAD
-// =========================
-
-document.getElementById("fileInput").addEventListener("change", function(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-
-    reader.onload = function(e) {
-        const text = e.target.result;
-        processCSV(text);
-    };
-
-    reader.readAsText(file);
-});
 // =========================
 // SESSION STORAGE
 // =========================
@@ -40,6 +26,25 @@ function addSession(session) {
     sessions.push(session);
     saveSessions(sessions);
 }
+
+// =========================
+// FILE UPLOAD
+// =========================
+
+document.getElementById("fileInput").addEventListener("change", function(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+
+    reader.onload = function(e) {
+        const text = e.target.result;
+        processCSV(text);
+    };
+
+    reader.readAsText(file);
+});
+
 // =========================
 // PROCESS CSV
 // =========================
@@ -72,13 +77,6 @@ function processCSV(data) {
         const lat = parseFloat(cols[1]);
         const lon = parseFloat(cols[2]);
         const speed = parseFloat(cols[3]);
-       let ax = NaN, ay = NaN, az = NaN;
-
-if (cols.length >= 7) {
-    ax = parseFloat(cols[4]);
-    ay = parseFloat(cols[5]);
-    az = parseFloat(cols[6]);
-}
 
         // SPEED
         if (!isNaN(speed)) {
@@ -93,6 +91,14 @@ if (cols.length >= 7) {
         }
 
         // ACCEL
+        let ax = NaN, ay = NaN, az = NaN;
+
+        if (cols.length >= 7) {
+            ax = parseFloat(cols[4]);
+            ay = parseFloat(cols[5]);
+            az = parseFloat(cols[6]);
+        }
+
         if (!isNaN(ax) && !isNaN(ay) && !isNaN(az)) {
             axData.push(ax);
             ayData.push(ay);
@@ -101,20 +107,111 @@ if (cols.length >= 7) {
         }
     }
 
-    console.log("Coords:", coordinates.length);
-    console.log("Accel sample:", axData.slice(0, 5));
+    console.log("coords:", coordinates.length);
 
-    // DISTANCE
     const distance = calculateDistance(coordinates);
 
     // UPDATE UI
-    document.getElementById("maxSpeed").textContent = maxSpeed.toFixed(2) + " m/s";
-    document.getElementById("distance").textContent = distance.toFixed(2) + " km";
+    document.getElementById("maxSpeed").textContent =
+        maxSpeed.toFixed(2) + " m/s";
 
-    // DRAW
+    document.getElementById("distance").textContent =
+        distance.toFixed(2) + " km";
+
+    // DRAW GRAPHS
     drawSpeedChart(speedLabels, speeds);
     drawAccelChart(accelLabels, axData, ayData, azData);
     drawMap(coordinates);
+
+    // =========================
+    // SAVE SESSION (FIXED)
+    // =========================
+
+    const session = {
+        id: "session_" + Date.now(),
+        name: "Session " + new Date().toLocaleTimeString(),
+        date: new Date().toLocaleDateString(),
+        data: {
+            speedLabels,
+            speeds,
+            axData,
+            ayData,
+            azData,
+            accelLabels,
+            coordinates
+        },
+        stats: {
+            maxSpeed,
+            distance
+        }
+    };
+
+    addSession(session);
+    console.log("✅ Session saved");
+
+    renderSessions(); // 🔥 CRITICAL
+}
+
+// =========================
+// RENDER SESSION LIST
+// =========================
+
+function renderSessions() {
+    const container = document.getElementById("sessionList");
+    if (!container) {
+        console.log("❌ sessionList not found");
+        return;
+    }
+
+    container.innerHTML = "";
+
+    const sessions = getSessions();
+
+    console.log("Rendering sessions:", sessions.length);
+
+    sessions.slice().reverse().forEach(session => {
+        const div = document.createElement("div");
+        div.className = "session-item";
+
+        div.innerHTML = `
+            <strong>${session.name}</strong><br>
+            ${session.date}<br>
+            Speed: ${session.stats.maxSpeed.toFixed(2)} m/s
+        `;
+
+        div.onclick = () => {
+            console.log("Clicked:", session.id);
+            loadSession(session.id);
+        };
+
+        container.appendChild(div);
+    });
+}
+
+// =========================
+// LOAD SESSION
+// =========================
+
+function loadSession(id) {
+    const sessions = getSessions();
+    const session = sessions.find(s => s.id === id);
+
+    if (!session) {
+        console.log("❌ Session not found");
+        return;
+    }
+
+    const d = session.data;
+
+    drawSpeedChart(d.speedLabels, d.speeds);
+    drawAccelChart(d.accelLabels, d.axData, d.ayData, d.azData);
+    drawMap(d.coordinates);
+
+    document.getElementById("maxSpeed").textContent =
+        session.stats.maxSpeed.toFixed(2) + " m/s";
+
+    document.getElementById("distance").textContent =
+        session.stats.distance.toFixed(2) + " km";
 }
 
 // =========================
@@ -160,34 +257,22 @@ function drawAccelChart(labels, ax, ay, az) {
 }
 
 // =========================
-// MAP (FIXED)
+// MAP
 // =========================
 
 function drawMap(coords) {
-    console.log("coords count:", coords.length);
-
-    if (!coords || coords.length === 0) {
-        console.log("❌ No coordinates");
-        return;
-    }
+    if (!coords.length) return;
 
     const cleanCoords = coords.filter(c =>
-        Array.isArray(c) &&
-        !isNaN(c[0]) &&
-        !isNaN(c[1])
+        !isNaN(c[0]) && !isNaN(c[1])
     );
 
-    if (cleanCoords.length === 0) {
-        console.log("❌ No valid coords");
-        return;
-    }
+    if (!cleanCoords.length) return;
 
     if (!map) {
         map = L.map('map').setView(cleanCoords[0], 15);
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap'
-        }).addTo(map);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
     }
 
     if (polyline) {
@@ -201,9 +286,7 @@ function drawMap(coords) {
 
     map.fitBounds(polyline.getBounds());
 
-    setTimeout(() => {
-        map.invalidateSize();
-    }, 100);
+    setTimeout(() => map.invalidateSize(), 100);
 }
 
 // =========================
@@ -232,73 +315,12 @@ function calculateDistance(coords) {
 
         total += R * c;
     }
-    // =========================
-// SAVE SESSION
-// =========================
-
-const session = {
-    id: "session_" + Date.now(),
-    name: "Session " + new Date().toLocaleTimeString(),
-    date: new Date().toLocaleDateString(),
-    data: {
-        speedLabels,
-        speeds,
-        axData,
-        ayData,
-        azData,
-        accelLabels,
-        coordinates
-    },
-    stats: {
-        maxSpeed,
-        distance
-    }
-};
 
     return total;
 }
-function renderSessions() {
-    const container = document.getElementById("sessionList");
-    container.innerHTML = "";
 
-    const sessions = getSessions();
+// =========================
+// INITIAL LOAD
+// =========================
 
-    sessions.reverse().forEach(session => {
-        const div = document.createElement("div");
-        div.className = "session-item";
-
-        div.innerHTML = `
-            <strong>${session.name}</strong><br>
-            ${session.date}<br>
-            Speed: ${session.stats.maxSpeed.toFixed(2)} m/s
-        `;
-
-        div.onclick = () => loadSession(session.id);
-
-        container.appendChild(div);
-    });
-}
-function loadSession(id) {
-    const sessions = getSessions();
-    const session = sessions.find(s => s.id === id);
-
-    if (!session) return;
-
-    const d = session.data;
-
-    drawSpeedChart(d.speedLabels, d.speeds);
-    drawAccelChart(d.accelLabels, d.axData, d.ayData, d.azData);
-    drawMap(d.coordinates);
-
-    document.getElementById("maxSpeed").textContent =
-        session.stats.maxSpeed.toFixed(2) + " m/s";
-
-    document.getElementById("distance").textContent =
-        session.stats.distance.toFixed(2) + " km";
-}
-
-
-addSession(session);
 renderSessions();
-
-console.log("✅ Session saved");
