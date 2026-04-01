@@ -62,21 +62,25 @@ function processCSV(data) {
         }
 
         // ACCELERATION (only if exists)
-        if (row.length >= 7) {
-            const ax = parseFloat(row[4]);
-            const ay = parseFloat(row[5]);
-            const az = parseFloat(row[6]);
+        // ACCELERATION (robust parsing)
+if (row.length >= 7) {
+    const ax = parseFloat(row[4]?.trim());
+    const ay = parseFloat(row[5]?.trim());
+    const az = parseFloat(row[6]?.trim());
 
-            if (!isNaN(ax) && !isNaN(ay) && !isNaN(az)) {
-                const accel = Math.sqrt(ax * ax + ay * ay + az * az);
+    console.log("AX AY AZ:", ax, ay, az);
 
-                accelData.push(accel);
-                accelLabels.push(time);
+    if (!isNaN(ax) && !isNaN(ay) && !isNaN(az)) {
+        const accel = Math.sqrt(ax * ax + ay * ay + az * az);
 
-                if (accel > 15) {
-                    impactCount++;
-                }
-            }
+        accelData.push(accel);
+        accelLabels.push(time);
+
+        if (accel > 15) {
+            impactCount++;
+        }
+    }
+}
         }
     }
 
