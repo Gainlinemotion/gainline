@@ -27,12 +27,11 @@ document.getElementById("fileInput").addEventListener("change", function(event) 
 });
 
 // =========================
-// CSV PARSER (FIXED)
+// CSV PARSER
 // =========================
 
 function parseCSV(text) {
     const rows = text.trim().split("\n");
-    const headers = rows[0].split(",");
 
     return rows.slice(1).map(row => {
         const cols = row.split(",");
@@ -42,8 +41,6 @@ function parseCSV(text) {
             lat: parseFloat(cols[1]),
             lon: parseFloat(cols[2]),
             speed: parseFloat(cols[3]),
-
-            // 🔥 FIX: ALWAYS parseFloat
             ax: parseFloat(cols[4]),
             ay: parseFloat(cols[5]),
             az: parseFloat(cols[6])
@@ -75,7 +72,7 @@ function plotSpeed(data) {
 }
 
 // =========================
-// ACCELERATION GRAPH (FIXED)
+// ACCELERATION GRAPH
 // =========================
 
 function plotAcceleration(data) {
@@ -108,7 +105,7 @@ function plotAcceleration(data) {
                     label: "Az",
                     data: az,
                     borderWidth: 1
-                
+                }
             ]
         }
     });
