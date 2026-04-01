@@ -235,3 +235,29 @@ function calculateDistance(coords) {
 
     return total;
 }
+// =========================
+// SAVE SESSION
+// =========================
+
+const session = {
+    id: "session_" + Date.now(),
+    name: "Session " + new Date().toLocaleTimeString(),
+    date: new Date().toLocaleDateString(),
+    data: {
+        speedLabels,
+        speeds,
+        axData,
+        ayData,
+        azData,
+        accelLabels,
+        coordinates
+    },
+    stats: {
+        maxSpeed,
+        distance
+    }
+};
+
+addSession(session);
+
+console.log("✅ Session saved");
