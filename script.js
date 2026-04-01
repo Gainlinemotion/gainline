@@ -256,6 +256,24 @@ function renderSessions() {
         container.appendChild(div);
     });
 }
+function loadSession(id) {
+    const sessions = getSessions();
+    const session = sessions.find(s => s.id === id);
+
+    if (!session) return;
+
+    const d = session.data;
+
+    drawSpeedChart(d.speedLabels, d.speeds);
+    drawAccelChart(d.accelLabels, d.axData, d.ayData, d.azData);
+    drawMap(d.coordinates);
+
+    document.getElementById("maxSpeed").textContent =
+        session.stats.maxSpeed.toFixed(2) + " m/s";
+
+    document.getElementById("distance").textContent =
+        session.stats.distance.toFixed(2) + " km";
+}
 // =========================
 // SAVE SESSION
 // =========================
@@ -280,5 +298,6 @@ const session = {
 };
 
 addSession(session);
+renderSessions();
 
 console.log("✅ Session saved");
