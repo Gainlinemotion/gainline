@@ -232,6 +232,28 @@ function calculateDistance(coords) {
 
         total += R * c;
     }
+    // =========================
+// SAVE SESSION
+// =========================
+
+const session = {
+    id: "session_" + Date.now(),
+    name: "Session " + new Date().toLocaleTimeString(),
+    date: new Date().toLocaleDateString(),
+    data: {
+        speedLabels,
+        speeds,
+        axData,
+        ayData,
+        azData,
+        accelLabels,
+        coordinates
+    },
+    stats: {
+        maxSpeed,
+        distance
+    }
+};
 
     return total;
 }
@@ -274,28 +296,7 @@ function loadSession(id) {
     document.getElementById("distance").textContent =
         session.stats.distance.toFixed(2) + " km";
 }
-// =========================
-// SAVE SESSION
-// =========================
 
-const session = {
-    id: "session_" + Date.now(),
-    name: "Session " + new Date().toLocaleTimeString(),
-    date: new Date().toLocaleDateString(),
-    data: {
-        speedLabels,
-        speeds,
-        axData,
-        ayData,
-        azData,
-        accelLabels,
-        coordinates
-    },
-    stats: {
-        maxSpeed,
-        distance
-    }
-};
 
 addSession(session);
 renderSessions();
