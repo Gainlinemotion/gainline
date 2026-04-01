@@ -92,24 +92,39 @@ function processCSV(data) {
         }
     }
 
-    // =========================
-    // ANALYTICS
-    // =========================
+// =========================
+// PERFORMANCE METRICS
+// =========================
 
-    const distance = calculateDistance(coords);
-    const avgSpeed = speeds.reduce((a,b)=>a+b,0)/speeds.length || 0;
-    const duration = speeds.length;
+// Acceleration magnitude
+let accelMag = [];
 
-    const accelMag = axData.map((_, i) =>
-        Math.sqrt(axData[i]**2 + ayData[i]**2 + azData[i]**2)
+for (let i = 0; i < axData.length; i++) {
+    const mag = Math.sqrt(
+        axData[i] * axData[i] +
+        ayData[i] * ayData[i] +
+        azData[i] * azData[i]
     );
+    accelMag.push(mag);
+}
 
-    const smoothAccel = movingAverage(accelMag, 5);
+// Smooth it (VERY IMPORTANT)
+function movingAverage(data, windowSize = 5) {
+    return data.map((_, i) => {
+        let start = Math.max(0, i - windowSize);
+        let subset = data.slice(start, i + 1);
+        return subset.reduce((a, b) => a + b, 0) / subset.length;
+    });
+}
 
-    const peakAccel = Math.max(...smoothAccel);
+const smoothAccel = movingAverage(accelMag);
 
-    const impactThreshold = 15; // tune this
-    const impactCount = smoothAccel.filter(a => a > impactThreshold).length;
+// Peak acceleration
+const peakAccel = Math.max(...smoothAccel);
+
+// Impact detection (rugby collisions)
+const IMPACT_THRESHOLD = 15; // tune this later
+const impactCount = smoothAccel.filter(a => a > IMPACT_THRESHOLD).length;
 
     // =========================
     // UI UPDATE
