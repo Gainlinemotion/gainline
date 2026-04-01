@@ -2,10 +2,13 @@
 <html>
 <head>
     <title>Gainline</title>
+
     <link rel="stylesheet" href="style.css">
 
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+    <!-- Leaflet -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 </head>
@@ -15,7 +18,6 @@
 <header>
     <h1>Gainline</h1>
 
-    <!-- SPORT SELECT -->
     <select id="sportSelect">
         <option value="rugby">Rugby</option>
         <option value="generic">Generic</option>
@@ -28,62 +30,44 @@
 <div class="card">
     <div class="card-header">
         <h2>Sessions</h2>
-        <button onclick="clearAllSessions()">Clear</button>
+        <button onclick="clearSessions()">Clear</button>
     </div>
     <div id="sessionList"></div>
 </div>
 
 <!-- STATS -->
-<div class="stats-row">
-    <div class="stat">
-        <span>Top Speed</span>
-        <p id="maxSpeed">--</p>
-    </div>
-
-    <div class="stat">
-        <span>Distance</span>
-        <p id="distance">--</p>
-    </div>
-
-    <div class="stat">
-        <span>Avg Speed</span>
-        <p id="avgSpeed">--</p>
-    </div>
+<div class="stats">
+    <div class="stat"><span>Top Speed</span><p id="maxSpeed">--</p></div>
+    <div class="stat"><span>Avg Speed</span><p id="avgSpeed">--</p></div>
+    <div class="stat"><span>Distance</span><p id="distance">--</p></div>
 </div>
 
 <!-- PERFORMANCE -->
 <div class="card">
     <h2>Performance</h2>
     <div class="performance">
-        <div>
-            <span>Impacts</span>
-            <p id="impactCount">--</p>
-        </div>
-        <div>
-            <span>Peak Accel</span>
-            <p id="peakAccel">--</p>
-        </div>
+        <div><span>Impacts</span><p id="impactCount">--</p></div>
+        <div><span>Peak Accel</span><p id="peakAccel">--</p></div>
     </div>
 </div>
 
-<!-- CHARTS -->
-<div class="card">
-    <h2>Speed</h2>
-    <canvas id="speedChart"></canvas>
-</div>
+<!-- GRAPHS -->
+<div class="card"><h2>Speed</h2><canvas id="speedChart"></canvas></div>
+<div class="card"><h2>Acceleration</h2><canvas id="accelChart"></canvas></div>
 
+<!-- MAP -->
 <div class="card">
-    <h2>Acceleration</h2>
-    <canvas id="accelChart"></canvas>
-</div>
-
-<div class="card">
-    <h2>Route</h2>
+    <h2>Route + Heat</h2>
     <div id="map"></div>
 </div>
 
+<script src="utils/calculations.js"></script>
+<script src="utils/charts.js"></script>
+<script src="utils/map.js"></script>
+
 <script src="sports/generic.js"></script>
 <script src="sports/rugby.js"></script>
+
 <script src="script.js"></script>
 
 </body>
