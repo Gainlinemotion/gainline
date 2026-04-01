@@ -24,8 +24,7 @@ document.getElementById("fileInput").addEventListener("change", function(event) 
 
 function processCSV(data) {
     const lines = data.split("\n");
-    const row = lines[i].trim().split(",");
-    console.log("ROW:", row);
+
     let maxSpeed = 0;
     let speeds = [];
     let speedLabels = [];
@@ -37,14 +36,21 @@ function processCSV(data) {
     let impactCount = 0;
 
     for (let i = 1; i < lines.length; i++) {
-        const row = lines[i].trim().split(",");
+        let row = lines[i].trim();
 
-        if (row.length < 4) continue;
+        if (!row) continue;
 
-        const time = row[0];
-        const lat = parseFloat(row[1]);
-        const lon = parseFloat(row[2]);
-        const speed = parseFloat(row[3]);
+        // REMOVE quotes + spaces
+        row = row.replace(/"/g, "").trim();
+
+        const cols = row.split(",");
+
+        if (cols.length < 4) continue;
+
+        const time = cols[0].trim();
+        const lat = parseFloat(cols[1]);
+        const lon = parseFloat(cols[2]);
+        const speed = parseFloat(cols[3]);
 
         // SPEED
         if (!isNaN(speed)) {
@@ -61,33 +67,29 @@ function processCSV(data) {
             coordinates.push([lat, lon]);
         }
 
-        // ACCELERATION (only if exists)
-        // ACCELERATION (robust parsing)
-if (row.length >= 7) {
-    const ax = parseFloat(row[4]?.trim());
-    const ay = parseFloat(row[5]?.trim());
-    const az = parseFloat(row[6]?.trim());
+        // ACCEL (robust)
+        if (cols.length >= 7) {
+            const ax = parseFloat(cols[4].trim());
+            const ay = parseFloat(cols[5].trim());
+            const az = parseFloat(cols[6].trim());
 
-    console.log("AX AY AZ:", ax, ay, az);
+            console.log("Accel raw:", cols[4], cols[5], cols[6]);
+            console.log("Accel parsed:", ax, ay, az);
 
-    if (!isNaN(ax) && !isNaN(ay) && !isNaN(az)) {
-        const accel = Math.sqrt(ax * ax + ay * ay + az * az);
+            if (!isNaN(ax) && !isNaN(ay) && !isNaN(az)) {
+                const accel = Math.sqrt(ax * ax + ay * ay + az * az);
 
-        accelData.push(accel);
-        accelLabels.push(time);
+                accelData.push(accel);
+                accelLabels.push(time);
 
-        if (accel > 15) {
-            impactCount++;
+                if (accel > 15) {
+                    impactCount++;
+                }
+            }
         }
     }
-}
-        }
-    }
 
-    console.log("Speeds:", speeds);
-    console.log("Coords:", coordinates);
-    console.log("Accel:", accelData);
-    console.log("Impacts:", impactCount);
+    console.log("FINAL ACCEL:", accelData);
 
     // DISTANCE
     const distance = calculateDistance(coordinates);
@@ -95,13 +97,14 @@ if (row.length >= 7) {
     document.getElementById("maxSpeed").textContent = maxSpeed.toFixed(2) + " m/s";
     document.getElementById("distance").textContent = distance.toFixed(2) + " km";
 
-    // DRAW CHARTS
+    // SPEED GRAPH
     drawSpeedChart(speedLabels, speeds);
 
+    // ACCEL GRAPH (FORCE DRAW IF DATA EXISTS)
     if (accelData.length > 0) {
         drawAccelChart(accelLabels, accelData);
     } else {
-        console.log("No acceleration data found");
+        console.log("⚠️ NO ACCEL DATA DETECTED");
     }
 
     // MAP
@@ -132,7 +135,14 @@ function drawSpeedChart(labels, data) {
 
 // ACCEL GRAPH
 function drawAccelChart(labels, data) {
-    const ctx = document.getElementById("accelChart").getContext("2d");
+    const canvas = document.getElementById("accelChart");
+
+    if (!canvas) {
+        console.log("❌ accelChart canvas not found");
+        return;
+    }
+
+    const ctx = canvas.getContext("2d");
 
     if (accelChart) accelChart.destroy();
 
@@ -148,6 +158,8 @@ function drawAccelChart(labels, data) {
             }]
         }
     });
+
+    console.log("✅ ACCEL GRAPH DRAWN");
 }
 
 // MAP
@@ -167,7 +179,7 @@ function drawMap(coords) {
     map.fitBounds(polyline.getBounds());
 }
 
-// DISTANCE (HAVERSINE)
+// DISTANCE
 function calculateDistance(coords) {
     let total = 0;
 
