@@ -108,7 +108,7 @@ function plotAcceleration(data) {
                     label: "Az",
                     data: az,
                     borderWidth: 1
-                }
+                
             ]
         }
     });
