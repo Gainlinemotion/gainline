@@ -70,14 +70,19 @@ function processCSV(data) {
         let lon = parseFloat(cols[2]);
         let speed = parseFloat(cols[3]);
 
+        // SPEED
         if (!isNaN(speed)) {
             speeds.push(speed);
             speedLabels.push(time);
             if (speed > maxSpeed) maxSpeed = speed;
         }
 
-        if (!isNaN(lat) && !isNaN(lon)) coords.push([lat, lon]);
+        // GPS
+        if (!isNaN(lat) && !isNaN(lon)) {
+            coords.push([lat, lon]);
+        }
 
+        // ACCEL
         if (cols.length >= 7) {
             let ax = parseFloat(cols[4]);
             let ay = parseFloat(cols[5]);
@@ -92,52 +97,72 @@ function processCSV(data) {
         }
     }
 
-// =========================
-// PERFORMANCE METRICS
-// =========================
+    // =========================
+    // VALIDATION
+    // =========================
+    if (!speeds.length || !coords.length) {
+        alert("Invalid session data");
+        return;
+    }
 
-// Acceleration magnitude
-let accelMag = [];
+    // =========================
+    // BASIC STATS (FIXED)
+    // =========================
 
-for (let i = 0; i < axData.length; i++) {
-    const mag = Math.sqrt(
-        axData[i] * axData[i] +
-        ayData[i] * ayData[i] +
-        azData[i] * azData[i]
-    );
-    accelMag.push(mag);
-}
+    const distance = calculateDistance(coords);
 
-// Smooth it (VERY IMPORTANT)
-function movingAverage(data, windowSize = 5) {
-    return data.map((_, i) => {
-        let start = Math.max(0, i - windowSize);
-        let subset = data.slice(start, i + 1);
-        return subset.reduce((a, b) => a + b, 0) / subset.length;
-    });
-}
+    const avgSpeed = speeds.length
+        ? speeds.reduce((a, b) => a + b, 0) / speeds.length
+        : 0;
 
-const smoothAccel = movingAverage(accelMag);
+    const duration = speeds.length; // can improve later
 
-// Peak acceleration
-const peakAccel = Math.max(...smoothAccel);
+    // =========================
+    // PERFORMANCE METRICS
+    // =========================
 
-// Impact detection (rugby collisions)
-const IMPACT_THRESHOLD = 15; // tune this later
-const impactCount = smoothAccel.filter(a => a > IMPACT_THRESHOLD).length;
+    let accelMag = [];
+
+    for (let i = 0; i < axData.length; i++) {
+        const mag = Math.sqrt(
+            axData[i] ** 2 +
+            ayData[i] ** 2 +
+            azData[i] ** 2
+        );
+        accelMag.push(mag);
+    }
+
+    const smoothAccel = movingAverage(accelMag, 5);
+
+    const peakAccel = smoothAccel.length
+        ? Math.max(...smoothAccel)
+        : 0;
+
+    const IMPACT_THRESHOLD = 15;
+
+    let impactCount = 0;
+
+    for (let i = 1; i < smoothAccel.length; i++) {
+        if (
+            smoothAccel[i] > IMPACT_THRESHOLD &&
+            smoothAccel[i - 1] <= IMPACT_THRESHOLD
+        ) {
+            impactCount++;
+        }
+    }
 
     // =========================
     // UI UPDATE
     // =========================
 
     updateStats(maxSpeed, distance, avgSpeed, duration, impactCount, peakAccel);
-    
+
     drawSpeedChart(speedLabels, speeds);
     drawAccelChart(accelLabels, axData, ayData, azData);
     drawMap(coords);
 
     // =========================
-    // SESSION NAME
+    // SESSION NAMING
     // =========================
 
     let name = prompt("Name this session:");
@@ -147,8 +172,23 @@ const impactCount = smoothAccel.filter(a => a > IMPACT_THRESHOLD).length;
         id: Date.now(),
         name,
         date: new Date().toLocaleDateString(),
-        stats: { maxSpeed, distance, avgSpeed, duration, impactCount, peakAccel },
-        data: { speedLabels, speeds, axData, ayData, azData, accelLabels, coords }
+        stats: {
+            maxSpeed,
+            distance,
+            avgSpeed,
+            duration,
+            impactCount,
+            peakAccel
+        },
+        data: {
+            speedLabels,
+            speeds,
+            axData,
+            ayData,
+            azData,
+            accelLabels,
+            coords
+        }
     };
 
     const sessions = getSessions();
@@ -165,15 +205,15 @@ const impactCount = smoothAccel.filter(a => a > IMPACT_THRESHOLD).length;
 function movingAverage(data, window) {
     return data.map((_, i) => {
         let start = Math.max(0, i - window);
-        let subset = data.slice(start, i+1);
-        return subset.reduce((a,b)=>a+b,0)/subset.length;
+        let subset = data.slice(start, i + 1);
+        return subset.reduce((a, b) => a + b, 0) / subset.length;
     });
 }
 
 function updateStats(maxSpeed, distance, avgSpeed, duration, impactCount, peakAccel) {
     document.getElementById("maxSpeed").textContent = maxSpeed.toFixed(2) + " m/s";
     document.getElementById("distance").textContent = distance.toFixed(2) + " km";
-    document.getElementById("avgSpeed").textContent = avgSpeed.toFixed(2);
+    document.getElementById("avgSpeed").textContent = avgSpeed.toFixed(2) + " m/s";
     document.getElementById("duration").textContent = duration + " pts";
 
     document.getElementById("impactCount").textContent = impactCount;
@@ -181,7 +221,7 @@ function updateStats(maxSpeed, distance, avgSpeed, duration, impactCount, peakAc
 }
 
 // =========================
-// SESSION UI (PRODUCT LEVEL)
+// SESSION UI
 // =========================
 
 function renderSessions() {
@@ -244,31 +284,44 @@ function loadSession(id) {
 }
 
 // =========================
-// CHARTS + MAP (UNCHANGED)
+// CHARTS
 // =========================
 
 function drawSpeedChart(labels, data) {
     if (speedChart) speedChart.destroy();
+
     speedChart = new Chart(document.getElementById("speedChart"), {
         type: "line",
-        data: { labels, datasets: [{ data, borderColor: "#4dabf7", tension: 0.3 }] }
+        data: {
+            labels,
+            datasets: [{
+                data,
+                borderColor: "#4dabf7",
+                tension: 0.3
+            }]
+        }
     });
 }
 
 function drawAccelChart(labels, ax, ay, az) {
     if (accelChart) accelChart.destroy();
+
     accelChart = new Chart(document.getElementById("accelChart"), {
         type: "line",
         data: {
             labels,
             datasets: [
-                { label:"Ax", data:ax, borderColor:"#4dabf7" },
-                { label:"Ay", data:ay, borderColor:"#1c7ed6" },
-                { label:"Az", data:az, borderColor:"#74c0fc" }
+                { label: "Ax", data: ax, borderColor: "#4dabf7" },
+                { label: "Ay", data: ay, borderColor: "#1c7ed6" },
+                { label: "Az", data: az, borderColor: "#74c0fc" }
             ]
         }
     });
 }
+
+// =========================
+// MAP
+// =========================
 
 function drawMap(coords) {
     if (!coords.length) return;
@@ -280,31 +333,48 @@ function drawMap(coords) {
 
     if (polyline) map.removeLayer(polyline);
 
-    polyline = L.polyline(coords, { color:"#4dabf7", weight:4 }).addTo(map);
+    polyline = L.polyline(coords, {
+        color: "#4dabf7",
+        weight: 4
+    }).addTo(map);
+
     map.fitBounds(polyline.getBounds());
 
-    setTimeout(()=>map.invalidateSize(),100);
+    setTimeout(() => map.invalidateSize(), 100);
 }
+
+// =========================
+// DISTANCE
+// =========================
 
 function calculateDistance(coords) {
     let total = 0;
+
     for (let i = 1; i < coords.length; i++) {
-        const [lat1, lon1] = coords[i-1];
+        const [lat1, lon1] = coords[i - 1];
         const [lat2, lon2] = coords[i];
 
         const R = 6371;
-        const dLat = (lat2-lat1)*Math.PI/180;
-        const dLon = (lon2-lon1)*Math.PI/180;
 
-        const a = Math.sin(dLat/2)**2 +
-            Math.cos(lat1*Math.PI/180) *
-            Math.cos(lat2*Math.PI/180) *
-            Math.sin(dLon/2)**2;
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
 
-        total += R * (2*Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
+        const a =
+            Math.sin(dLat / 2) ** 2 +
+            Math.cos(lat1 * Math.PI / 180) *
+            Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon / 2) ** 2;
+
+        total += R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
     }
+
     return total;
 }
 
+// =========================
 // INIT
+// =========================
+
+renderSessions();
+
 renderSessions();
