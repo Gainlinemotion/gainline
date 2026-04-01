@@ -38,16 +38,12 @@ function processCSV(data) {
     for (let i = 1; i < lines.length; i++) {
         const row = lines[i].trim().split(",");
 
-        if (row.length < 7) continue;
+        if (row.length < 4) continue;
 
         const time = row[0];
         const lat = parseFloat(row[1]);
         const lon = parseFloat(row[2]);
         const speed = parseFloat(row[3]);
-
-        const ax = parseFloat(row[4]);
-        const ay = parseFloat(row[5]);
-        const az = parseFloat(row[6]);
 
         // SPEED
         if (!isNaN(speed)) {
@@ -59,27 +55,33 @@ function processCSV(data) {
             }
         }
 
-        // ACCELERATION (magnitude)
-        if (!isNaN(ax) && !isNaN(ay) && !isNaN(az)) {
-            const accel = Math.sqrt(ax*ax + ay*ay + az*az);
-
-            accelData.push(accel);
-            accelLabels.push(time);
-
-            // IMPACT DETECTION
-            if (accel > 15) {
-                impactCount++;
-            }
-        }
-
         // GPS
         if (!isNaN(lat) && !isNaN(lon)) {
             coordinates.push([lat, lon]);
         }
+
+        // ACCELERATION (only if exists)
+        if (row.length >= 7) {
+            const ax = parseFloat(row[4]);
+            const ay = parseFloat(row[5]);
+            const az = parseFloat(row[6]);
+
+            if (!isNaN(ax) && !isNaN(ay) && !isNaN(az)) {
+                const accel = Math.sqrt(ax * ax + ay * ay + az * az);
+
+                accelData.push(accel);
+                accelLabels.push(time);
+
+                if (accel > 15) {
+                    impactCount++;
+                }
+            }
+        }
     }
 
-    console.log("Parsed speeds:", speeds);
-    console.log("Parsed coords:", coordinates);
+    console.log("Speeds:", speeds);
+    console.log("Coords:", coordinates);
+    console.log("Accel:", accelData);
     console.log("Impacts:", impactCount);
 
     // DISTANCE
@@ -90,7 +92,12 @@ function processCSV(data) {
 
     // DRAW CHARTS
     drawSpeedChart(speedLabels, speeds);
-    drawAccelChart(accelLabels, accelData);
+
+    if (accelData.length > 0) {
+        drawAccelChart(accelLabels, accelData);
+    } else {
+        console.log("No acceleration data found");
+    }
 
     // MAP
     if (coordinates.length > 0) {
