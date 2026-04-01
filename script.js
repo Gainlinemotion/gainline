@@ -131,7 +131,7 @@ const impactCount = smoothAccel.filter(a => a > IMPACT_THRESHOLD).length;
     // =========================
 
     updateStats(maxSpeed, distance, avgSpeed, duration, impactCount, peakAccel);
-
+    
     drawSpeedChart(speedLabels, speeds);
     drawAccelChart(accelLabels, axData, ayData, azData);
     drawMap(coords);
@@ -170,13 +170,13 @@ function movingAverage(data, window) {
     });
 }
 
-function updateStats(maxSpeed, distance, avgSpeed, duration, impacts, peakAccel) {
+function updateStats(maxSpeed, distance, avgSpeed, duration, impactCount, peakAccel) {
     document.getElementById("maxSpeed").textContent = maxSpeed.toFixed(2) + " m/s";
     document.getElementById("distance").textContent = distance.toFixed(2) + " km";
     document.getElementById("avgSpeed").textContent = avgSpeed.toFixed(2);
     document.getElementById("duration").textContent = duration + " pts";
 
-    document.getElementById("impactCount").textContent = impacts;
+    document.getElementById("impactCount").textContent = impactCount;
     document.getElementById("peakAccel").textContent = peakAccel.toFixed(2);
 }
 
