@@ -5,10 +5,8 @@
 
     <link rel="stylesheet" href="style.css">
 
-    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    <!-- Leaflet -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 </head>
@@ -18,12 +16,16 @@
 <h1>Gainline Performance</h1>
 
 <input type="file" id="fileInput" accept=".csv">
+
 <div class="card">
-    <h2>Sessions</h2>
+    <div class="session-header">
+        <h2>Sessions</h2>
+        <button onclick="clearAllSessions()">Clear All</button>
+    </div>
     <div id="sessionList"></div>
 </div>
 
-<!-- 🔷 STATS ROW -->
+<!-- STATS -->
 <div class="stats-row">
     <div class="card stat-card">
         <h3>Top Speed</h3>
@@ -34,21 +36,46 @@
         <h3>Distance</h3>
         <p id="distance">--</p>
     </div>
+
+    <div class="card stat-card">
+        <h3>Avg Speed</h3>
+        <p id="avgSpeed">--</p>
+    </div>
+
+    <div class="card stat-card">
+        <h3>Duration</h3>
+        <p id="duration">--</p>
+    </div>
 </div>
 
-<!-- 🔷 SPEED CARD -->
+<!-- PERFORMANCE -->
+<div class="card">
+    <h2>Performance</h2>
+    <div class="performance-grid">
+        <div>
+            <h3>Impact Count</h3>
+            <p id="impactCount">--</p>
+        </div>
+        <div>
+            <h3>Peak Accel</h3>
+            <p id="peakAccel">--</p>
+        </div>
+    </div>
+</div>
+
+<!-- SPEED -->
 <div class="card">
     <h2>Speed</h2>
     <canvas id="speedChart"></canvas>
 </div>
 
-<!-- 🔷 ACCEL CARD -->
+<!-- ACCEL -->
 <div class="card">
     <h2>Acceleration</h2>
     <canvas id="accelChart"></canvas>
 </div>
 
-<!-- 🔷 MAP CARD -->
+<!-- MAP -->
 <div class="card">
     <h2>Route</h2>
     <div id="map"></div>
