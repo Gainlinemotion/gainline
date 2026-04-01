@@ -1,8 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Gainline Tracker</title>
-
+    <title>Gainline</title>
     <link rel="stylesheet" href="style.css">
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -13,79 +12,78 @@
 
 <body>
 
-<h1>Gainline Performance</h1>
+<header>
+    <h1>Gainline</h1>
+
+    <!-- SPORT SELECT -->
+    <select id="sportSelect">
+        <option value="rugby">Rugby</option>
+        <option value="generic">Generic</option>
+    </select>
+</header>
 
 <input type="file" id="fileInput" accept=".csv">
 
+<!-- SESSIONS -->
 <div class="card">
-    <div class="session-header">
+    <div class="card-header">
         <h2>Sessions</h2>
-        <button onclick="clearAllSessions()">Clear All</button>
+        <button onclick="clearAllSessions()">Clear</button>
     </div>
     <div id="sessionList"></div>
 </div>
 
 <!-- STATS -->
 <div class="stats-row">
-    <div class="card stat-card">
-        <h3>Top Speed</h3>
+    <div class="stat">
+        <span>Top Speed</span>
         <p id="maxSpeed">--</p>
     </div>
 
-    <div class="card stat-card">
-        <h3>Distance</h3>
+    <div class="stat">
+        <span>Distance</span>
         <p id="distance">--</p>
     </div>
 
-    <div class="card stat-card">
-        <h3>Avg Speed</h3>
+    <div class="stat">
+        <span>Avg Speed</span>
         <p id="avgSpeed">--</p>
-    </div>
-
-    <div class="card stat-card">
-        <h3>Duration</h3>
-        <p id="duration">--</p>
-    </div>
-    <div class="card">
-        <h2>Performance</h2>
-        <p>Impact Count: <span id="impactCount">--</span></p>
-        <p>Peak Acceleration: <span id="peakAccel">--</span></p>
     </div>
 </div>
 
 <!-- PERFORMANCE -->
 <div class="card">
     <h2>Performance</h2>
-    <div class="performance-grid">
+    <div class="performance">
         <div>
-            <h3>Impact Count</h3>
+            <span>Impacts</span>
             <p id="impactCount">--</p>
         </div>
         <div>
-            <h3>Peak Accel</h3>
+            <span>Peak Accel</span>
             <p id="peakAccel">--</p>
         </div>
     </div>
 </div>
 
-<!-- SPEED -->
+<!-- CHARTS -->
 <div class="card">
     <h2>Speed</h2>
     <canvas id="speedChart"></canvas>
 </div>
 
-<!-- ACCEL -->
 <div class="card">
     <h2>Acceleration</h2>
     <canvas id="accelChart"></canvas>
 </div>
 
-<!-- MAP -->
 <div class="card">
     <h2>Route</h2>
     <div id="map"></div>
 </div>
 
+<script src="sports/generic.js"></script>
+<script src="sports/rugby.js"></script>
 <script src="script.js"></script>
 
 </body>
