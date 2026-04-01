@@ -1,33 +1,25 @@
-let speedChart, accelChart;
+let map;
+let polyline;
 
-function drawSpeedChart(labels, speeds) {
-    if (speedChart) speedChart.destroy();
+function drawMap(coords) {
+    if (!coords.length) return;
 
-    speedChart = new Chart(speedChartCanvas, {
-        type: "line",
-        data: {
-            labels,
-            datasets: [{
-                data: speeds,
-                borderColor: "#4dabf7",
-                tension: 0.3
-            }]
-        }
-    });
-}
+    if (!map) {
+        map = L.map('map').setView(coords[0], 15);
 
-function drawAccelChart(labels, ax, ay, az) {
-    if (accelChart) accelChart.destroy();
+        L.tileLayer(
+            'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+        ).addTo(map);
+    }
 
-    accelChart = new Chart(accelChartCanvas, {
-        type: "line",
-        data: {
-            labels,
-            datasets: [
-                {label:"Ax", data:ax},
-                {label:"Ay", data:ay},
-                {label:"Az", data:az}
-            ]
-        }
-    });
+    if (polyline) {
+        map.removeLayer(polyline);
+    }
+
+    polyline = L.polyline(coords, {
+        color: "#4dabf7",
+        weight: 4
+    }).addTo(map);
+
+    map.fitBounds(polyline.getBounds());
 }
