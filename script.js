@@ -173,21 +173,49 @@ function drawAccelChart(labels, ax, ay, az) {
 
 // MAP
 function drawMap(coords) {
-    if (!map) {
-        map = L.map('map').setView(coords[0], 15);
+    console.log("Drawing map with coords:", coords.length);
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    if (!coords || coords.length === 0) {
+        console.log("❌ No coordinates to display");
+        return;
     }
 
+    const firstValid = coords.find(c => !isNaN(c[0]) && !isNaN(c[1]));
+
+    if (!firstValid) {
+        console.log("❌ No valid coordinates found");
+        return;
+    }
+
+    // INIT MAP
+    if (!map) {
+        map = L.map('map').setView(firstValid, 15);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
+    }
+
+    // REMOVE OLD LINE
     if (polyline) {
         map.removeLayer(polyline);
     }
 
-    polyline = L.polyline(coords, { color: 'blue' }).addTo(map);
+    // FILTER BAD POINTS
+    const cleanCoords = coords.filter(c => !isNaN(c[0]) && !isNaN(c[1]));
+
+    polyline = L.polyline(cleanCoords, {
+        color: 'blue',
+        weight: 4
+    }).addTo(map);
 
     map.fitBounds(polyline.getBounds());
-}
 
+    // 🔥 IMPORTANT FIX
+    setTimeout(() => {
+        map.invalidateSize();
+    }, 100);
+}
 // DISTANCE
 function calculateDistance(coords) {
     let total = 0;
