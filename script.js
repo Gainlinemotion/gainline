@@ -70,19 +70,14 @@ function processCSV(data) {
         let lon = parseFloat(cols[2]);
         let speed = parseFloat(cols[3]);
 
-        // SPEED
         if (!isNaN(speed)) {
             speeds.push(speed);
             speedLabels.push(time);
             if (speed > maxSpeed) maxSpeed = speed;
         }
 
-        // GPS
-        if (!isNaN(lat) && !isNaN(lon)) {
-            coords.push([lat, lon]);
-        }
+        if (!isNaN(lat) && !isNaN(lon)) coords.push([lat, lon]);
 
-        // ACCEL
         if (cols.length >= 7) {
             let ax = parseFloat(cols[4]);
             let ay = parseFloat(cols[5]);
@@ -97,6 +92,94 @@ function processCSV(data) {
         }
     }
 
+    // ===== FIXED STATS =====
+    const distance = calculateDistance(coords);
+
+    const avgSpeed = speeds.length
+        ? speeds.reduce((a, b) => a + b, 0) / speeds.length
+        : 0;
+
+    const duration = speeds.length;
+
+    // ===== PERFORMANCE =====
+    let accelMag = [];
+
+    for (let i = 0; i < axData.length; i++) {
+        const mag = Math.sqrt(
+            axData[i]**2 + ayData[i]**2 + azData[i]**2
+        );
+        accelMag.push(mag);
+    }
+
+    const smoothAccel = movingAverage(accelMag, 5);
+
+    const peakAccel = smoothAccel.length
+        ? Math.max(...smoothAccel)
+        : 0;
+
+    // REAL impact detection (not spam counting)
+    let impactCount = 0;
+    const THRESHOLD = 15;
+
+    for (let i = 1; i < smoothAccel.length; i++) {
+        if (
+            smoothAccel[i] > THRESHOLD &&
+            smoothAccel[i - 1] <= THRESHOLD
+        ) {
+            impactCount++;
+        }
+    }
+
+    // ===== UI (UNCHANGED STYLE) =====
+    document.getElementById("maxSpeed").textContent =
+        maxSpeed.toFixed(2) + " m/s";
+
+    document.getElementById("distance").textContent =
+        distance.toFixed(2) + " km";
+
+    // OPTIONAL (only if you already added these in HTML)
+    if (document.getElementById("avgSpeed")) {
+        document.getElementById("avgSpeed").textContent =
+            avgSpeed.toFixed(2) + " m/s";
+    }
+
+    if (document.getElementById("impactCount")) {
+        document.getElementById("impactCount").textContent = impactCount;
+    }
+
+    if (document.getElementById("peakAccel")) {
+        document.getElementById("peakAccel").textContent =
+            peakAccel.toFixed(2);
+    }
+
+    // ===== DRAW (UNCHANGED) =====
+    drawSpeedChart(speedLabels, speeds);
+    drawAccelChart(accelLabels, axData, ayData, azData);
+    drawMap(coords);
+
+    // ===== SAVE SESSION (UNCHANGED STYLE) =====
+    const session = {
+        id: Date.now(),
+        name: "Session " + new Date().toLocaleTimeString(),
+        date: new Date().toLocaleDateString(),
+        data: {
+            speedLabels,
+            speeds,
+            axData,
+            ayData,
+            azData,
+            accelLabels,
+            coords
+        },
+        stats: {
+            maxSpeed,
+            distance
+        }
+    };
+
+    addSession(session);
+    renderSessions();
+}
     // =========================
     // VALIDATION
     // =========================
