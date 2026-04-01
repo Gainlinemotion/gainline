@@ -1,14 +1,15 @@
 console.log("script loaded");
 
-let chart;
+let speedChart;
 let accelChart;
 let map;
 let polyline;
 
+// =========================
 // FILE UPLOAD
-document.getElementById("fileInput").addEventListener("change", function(event) {
-    console.log("file selected");
+// =========================
 
+document.getElementById("fileInput").addEventListener("change", function(event) {
     const file = event.target.files[0];
     if (!file) return;
 
@@ -22,45 +23,47 @@ document.getElementById("fileInput").addEventListener("change", function(event) 
     reader.readAsText(file);
 });
 
-function processCSV(data) {
-    const lines = data.split("\n");
+// =========================
+// PROCESS CSV
+// =========================
 
-    let maxSpeed = 0;
+function processCSV(data) {
+    const lines = data.trim().split("\n");
+
     let speeds = [];
     let speedLabels = [];
 
-    // 🔥 NEW STRUCTURE
     let axData = [];
     let ayData = [];
     let azData = [];
     let accelLabels = [];
 
     let coordinates = [];
-    let impactCount = 0;
+
+    let maxSpeed = 0;
 
     for (let i = 1; i < lines.length; i++) {
         let row = lines[i].trim();
         if (!row) continue;
 
-        row = row.replace(/"/g, "").trim();
-
+        row = row.replace(/"/g, "");
         const cols = row.split(",");
 
-        if (cols.length < 4) continue;
+        if (cols.length < 7) continue;
 
-        const time = cols[0].trim();
+        const time = cols[0];
         const lat = parseFloat(cols[1]);
         const lon = parseFloat(cols[2]);
         const speed = parseFloat(cols[3]);
+        const ax = parseFloat(cols[4]);
+        const ay = parseFloat(cols[5]);
+        const az = parseFloat(cols[6]);
 
         // SPEED
         if (!isNaN(speed)) {
             speeds.push(speed);
             speedLabels.push(time);
-
-            if (speed > maxSpeed) {
-                maxSpeed = speed;
-            }
+            if (speed > maxSpeed) maxSpeed = speed;
         }
 
         // GPS
@@ -68,69 +71,46 @@ function processCSV(data) {
             coordinates.push([lat, lon]);
         }
 
-        // ACCELERATION
-        if (cols.length >= 7) {
-            const ax = parseFloat(cols[4]);
-            const ay = parseFloat(cols[5]);
-            const az = parseFloat(cols[6]);
-
-            console.log("Accel:", ax, ay, az);
-
-            if (!isNaN(ax) && !isNaN(ay) && !isNaN(az)) {
-
-                // 🔥 STORE EACH AXIS
-                axData.push(ax);
-                ayData.push(ay);
-                azData.push(az);
-                accelLabels.push(time);
-
-                // 🔥 MAGNITUDE (for impacts)
-                const accelMag = Math.sqrt(ax * ax + ay * ay + az * az);
-
-                if (accelMag > 15) {
-                    impactCount++;
-                }
-            }
+        // ACCEL
+        if (!isNaN(ax) && !isNaN(ay) && !isNaN(az)) {
+            axData.push(ax);
+            ayData.push(ay);
+            azData.push(az);
+            accelLabels.push(time);
         }
     }
 
-    console.log("AX sample:", axData.slice(0, 5));
+    console.log("Coords:", coordinates.length);
+    console.log("Accel sample:", axData.slice(0, 5));
 
     // DISTANCE
     const distance = calculateDistance(coordinates);
 
+    // UPDATE UI
     document.getElementById("maxSpeed").textContent = maxSpeed.toFixed(2) + " m/s";
     document.getElementById("distance").textContent = distance.toFixed(2) + " km";
 
-    // SPEED GRAPH
+    // DRAW
     drawSpeedChart(speedLabels, speeds);
-
-    // ACCEL GRAPH
-    if (axData.length > 0) {
-        drawAccelChart(accelLabels, axData, ayData, azData);
-    } else {
-        console.log("❌ NO ACCEL DATA");
-    }
-
-    // MAP
-    if (coordinates.length > 0) {
-        drawMap(coordinates);
-    }
+    drawAccelChart(accelLabels, axData, ayData, azData);
+    drawMap(coordinates);
 }
 
-// SPEED GRAPH
+// =========================
+// SPEED CHART
+// =========================
+
 function drawSpeedChart(labels, data) {
-    const ctx = document.getElementById("speedChart").getContext("2d");
+    if (speedChart) speedChart.destroy();
 
-    if (chart) chart.destroy();
-
-    chart = new Chart(ctx, {
+    speedChart = new Chart(document.getElementById("speedChart"), {
         type: "line",
         data: {
             labels: labels,
             datasets: [{
                 label: "Speed (m/s)",
                 data: data,
+                borderColor: "#4dabf7",
                 borderWidth: 2,
                 tension: 0.3
             }]
@@ -138,85 +118,59 @@ function drawSpeedChart(labels, data) {
     });
 }
 
-// 🔥 FIXED ACCEL GRAPH
-function drawAccelChart(labels, ax, ay, az) {
-    const ctx = document.getElementById("accelChart").getContext("2d");
+// =========================
+// ACCEL CHART
+// =========================
 
+function drawAccelChart(labels, ax, ay, az) {
     if (accelChart) accelChart.destroy();
 
-    accelChart = new Chart(ctx, {
+    accelChart = new Chart(document.getElementById("accelChart"), {
         type: "line",
         data: {
             labels: labels,
             datasets: [
-                {
-                    label: "Ax",
-                    data: ax,
-                    borderWidth: 1
-                },
-                {
-                    label: "Ay",
-                    data: ay,
-                    borderWidth: 1
-                },
-                {
-                    label: "Az",
-                    data: az,
-                    borderWidth: 1
-                }
+                { label: "Ax", data: ax, borderColor: "#4dabf7" },
+                { label: "Ay", data: ay, borderColor: "#1c7ed6" },
+                { label: "Az", data: az, borderColor: "#74c0fc" }
             ]
         }
     });
-
-    console.log("✅ ACCEL GRAPH WORKING");
 }
 
-// MAP
+// =========================
+// MAP (FIXED)
+// =========================
+
 function drawMap(coords) {
-    console.log("Drawing map with coords:", coords.length);
+    if (!coords.length) return;
 
-    if (!coords || coords.length === 0) {
-        console.log("❌ No coordinates to display");
-        return;
-    }
+    const first = coords.find(c => !isNaN(c[0]) && !isNaN(c[1]));
+    if (!first) return;
 
-    const firstValid = coords.find(c => !isNaN(c[0]) && !isNaN(c[1]));
-
-    if (!firstValid) {
-        console.log("❌ No valid coordinates found");
-        return;
-    }
-
-    // INIT MAP
     if (!map) {
-        map = L.map('map').setView(firstValid, 15);
+        map = L.map('map').setView(first, 15);
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap'
-        }).addTo(map);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
     }
 
-    // REMOVE OLD LINE
     if (polyline) {
         map.removeLayer(polyline);
     }
 
-    // FILTER BAD POINTS
-    const cleanCoords = coords.filter(c => !isNaN(c[0]) && !isNaN(c[1]));
-
-    polyline = L.polyline(cleanCoords, {
-        color: 'blue',
-        weight: 4
-    }).addTo(map);
+    polyline = L.polyline(coords, { color: "#4dabf7" }).addTo(map);
 
     map.fitBounds(polyline.getBounds());
 
-    // 🔥 IMPORTANT FIX
     setTimeout(() => {
         map.invalidateSize();
     }, 100);
 }
+
+// =========================
 // DISTANCE
+// =========================
+
 function calculateDistance(coords) {
     let total = 0;
 
