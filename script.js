@@ -1,62 +1,40 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Gainline</title>
+console.log("script loaded");
 
-    <!-- CSS -->
-    <link rel="stylesheet" href="style.css">
+let chart;
+let map;
+let polyline;
 
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+// FILE UPLOAD
+document.getElementById("fileInput").addEventListener("change", function(event) {
+    console.log("file selected");
 
-    <!-- Leaflet -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-</head>
+    const file = event.target.files[0];
+    if (!file) return;
 
-<body>
+    const reader = new FileReader();
 
-<header>
-    Gainline Dashboard
-</header>
+    reader.onload = function(e) {
+        const text = e.target.result;
+        processCSV(text);
+    };
 
-<div class="container">
+    reader.readAsText(file);
+});
 
-    <!-- Upload -->
-    <div class="card">
-        <div class="label">Upload Session</div>
-        <input type="file" id="fileInput">
-    </div>
+function processCSV(data) {
+    const lines = data.split("\n");
 
-    <!-- Stats -->
-    <div class="card">
-        <div class="label">Distance</div>
-        <div class="stat" id="distance">--</div>
-    </div>
+    let maxSpeed = 0;
+    let speeds = [];
+    let labels = [];
+    let coordinates = [];
 
-    <div class="card">
-        <div class="label">Max Speed</div>
-        <div class="stat" id="maxSpeed">--</div>
-    </div>
+    for (let i = 1; i < lines.length; i++) {
+        const row = lines[i].trim().split(",");
 
-    <!-- Graph -->
-    <div class="card">
-        <div class="label">Speed Graph</div>
-        <canvas id="speedChart"></canvas>
-    </div>
+        if (row.length < 4) continue;
 
-    <!-- Map -->
-    <div class="card">
-        <div class="label">Route Map</div>
-        <div id="map" style="height: 300px;"></div>
-    </div>
-
-</div>
-
-<script src="script.js"></script>
-
-</body>
-</html>        const time = row[0];
+        const time = row[0];
         const lat = parseFloat(row[1]);
         const lon = parseFloat(row[2]);
         const speed = parseFloat(row[3]);
@@ -78,8 +56,11 @@
     console.log("Parsed speeds:", speeds);
     console.log("Parsed coords:", coordinates);
 
+    // REAL DISTANCE
+    const distance = calculateDistance(coordinates);
+
     document.getElementById("maxSpeed").textContent = maxSpeed.toFixed(2) + " m/s";
-    document.getElementById("distance").textContent = (speeds.length * 0.01).toFixed(2) + " km";
+    document.getElementById("distance").textContent = distance.toFixed(2) + " km";
 
     drawChart(labels, speeds);
 
@@ -88,6 +69,7 @@
     }
 }
 
+// GRAPH
 function drawChart(labels, data) {
     const ctx = document.getElementById("speedChart").getContext("2d");
 
@@ -112,6 +94,7 @@ function drawChart(labels, data) {
     });
 }
 
+// MAP
 function drawMap(coords) {
     if (!map) {
         map = L.map('map').setView(coords[0], 15);
@@ -127,6 +110,8 @@ function drawMap(coords) {
 
     map.fitBounds(polyline.getBounds());
 }
+
+// HAVERSINE DISTANCE
 function calculateDistance(coords) {
     let total = 0;
 
@@ -134,16 +119,16 @@ function calculateDistance(coords) {
         const [lat1, lon1] = coords[i - 1];
         const [lat2, lon2] = coords[i];
 
-        const R = 6371; // Earth radius (km)
+        const R = 6371; // km
 
         const dLat = (lat2 - lat1) * Math.PI / 180;
         const dLon = (lon2 - lon1) * Math.PI / 180;
 
         const a =
-            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.sin(dLat / 2) ** 2 +
             Math.cos(lat1 * Math.PI / 180) *
             Math.cos(lat2 * Math.PI / 180) *
-            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            Math.sin(dLon / 2) ** 2;
 
         const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
@@ -153,5 +138,4 @@ function calculateDistance(coords) {
     }
 
     return total;
-}
 }
