@@ -13,18 +13,25 @@ let polyline;
 // =========================
 
 function getSessions() {
-    const sessions = localStorage.getItem("gainline_sessions");
-    return sessions ? JSON.parse(sessions) : [];
+    return JSON.parse(localStorage.getItem("gainline_sessions")) || [];
 }
 
 function saveSessions(sessions) {
     localStorage.setItem("gainline_sessions", JSON.stringify(sessions));
 }
 
-function addSession(session) {
-    const sessions = getSessions();
-    sessions.push(session);
+function deleteSession(id) {
+    let sessions = getSessions();
+    sessions = sessions.filter(s => s.id !== id);
     saveSessions(sessions);
+    renderSessions();
+}
+
+function clearAllSessions() {
+    if (confirm("Delete all sessions?")) {
+        localStorage.removeItem("gainline_sessions");
+        renderSessions();
+    }
 }
 
 // =========================
@@ -36,152 +43,161 @@ document.getElementById("fileInput").addEventListener("change", function(event) 
     if (!file) return;
 
     const reader = new FileReader();
-
-    reader.onload = function(e) {
-        const text = e.target.result;
-        processCSV(text);
-    };
-
+    reader.onload = e => processCSV(e.target.result);
     reader.readAsText(file);
 });
 
 // =========================
-// PROCESS CSV
+// CSV PROCESSING
 // =========================
 
 function processCSV(data) {
     const lines = data.trim().split("\n");
 
-    let speeds = [];
-    let speedLabels = [];
-
-    let axData = [];
-    let ayData = [];
-    let azData = [];
-    let accelLabels = [];
-
-    let coordinates = [];
+    let speeds = [], speedLabels = [];
+    let axData = [], ayData = [], azData = [], accelLabels = [];
+    let coords = [];
 
     let maxSpeed = 0;
 
     for (let i = 1; i < lines.length; i++) {
-        let row = lines[i].trim();
-        if (!row) continue;
-
-        row = row.replace(/"/g, "");
-        const cols = row.split(",");
+        let cols = lines[i].replace(/"/g, "").split(",");
 
         if (cols.length < 4) continue;
 
-        const time = cols[0];
-        const lat = parseFloat(cols[1]);
-        const lon = parseFloat(cols[2]);
-        const speed = parseFloat(cols[3]);
+        let time = cols[0];
+        let lat = parseFloat(cols[1]);
+        let lon = parseFloat(cols[2]);
+        let speed = parseFloat(cols[3]);
 
-        // SPEED
         if (!isNaN(speed)) {
             speeds.push(speed);
             speedLabels.push(time);
             if (speed > maxSpeed) maxSpeed = speed;
         }
 
-        // GPS
-        if (!isNaN(lat) && !isNaN(lon)) {
-            coordinates.push([lat, lon]);
-        }
-
-        // ACCEL
-        let ax = NaN, ay = NaN, az = NaN;
+        if (!isNaN(lat) && !isNaN(lon)) coords.push([lat, lon]);
 
         if (cols.length >= 7) {
-            ax = parseFloat(cols[4]);
-            ay = parseFloat(cols[5]);
-            az = parseFloat(cols[6]);
-        }
+            let ax = parseFloat(cols[4]);
+            let ay = parseFloat(cols[5]);
+            let az = parseFloat(cols[6]);
 
-        if (!isNaN(ax) && !isNaN(ay) && !isNaN(az)) {
-            axData.push(ax);
-            ayData.push(ay);
-            azData.push(az);
-            accelLabels.push(time);
+            if (!isNaN(ax) && !isNaN(ay) && !isNaN(az)) {
+                axData.push(ax);
+                ayData.push(ay);
+                azData.push(az);
+                accelLabels.push(time);
+            }
         }
     }
 
-    console.log("coords:", coordinates.length);
+    // =========================
+    // ANALYTICS
+    // =========================
 
-    const distance = calculateDistance(coordinates);
+    const distance = calculateDistance(coords);
+    const avgSpeed = speeds.reduce((a,b)=>a+b,0)/speeds.length || 0;
+    const duration = speeds.length;
 
-    // UPDATE UI
-    document.getElementById("maxSpeed").textContent =
-        maxSpeed.toFixed(2) + " m/s";
+    const accelMag = axData.map((_, i) =>
+        Math.sqrt(axData[i]**2 + ayData[i]**2 + azData[i]**2)
+    );
 
-    document.getElementById("distance").textContent =
-        distance.toFixed(2) + " km";
+    const smoothAccel = movingAverage(accelMag, 5);
 
-    // DRAW GRAPHS
+    const peakAccel = Math.max(...smoothAccel);
+
+    const impactThreshold = 15; // tune this
+    const impactCount = smoothAccel.filter(a => a > impactThreshold).length;
+
+    // =========================
+    // UI UPDATE
+    // =========================
+
+    updateStats(maxSpeed, distance, avgSpeed, duration, impactCount, peakAccel);
+
     drawSpeedChart(speedLabels, speeds);
     drawAccelChart(accelLabels, axData, ayData, azData);
-    drawMap(coordinates);
+    drawMap(coords);
 
     // =========================
-    // SAVE SESSION (FIXED)
+    // SESSION NAME
     // =========================
+
+    let name = prompt("Name this session:");
+    if (!name) name = "Session " + new Date().toLocaleTimeString();
 
     const session = {
-        id: "session_" + Date.now(),
-        name: "Session " + new Date().toLocaleTimeString(),
+        id: Date.now(),
+        name,
         date: new Date().toLocaleDateString(),
-        data: {
-            speedLabels,
-            speeds,
-            axData,
-            ayData,
-            azData,
-            accelLabels,
-            coordinates
-        },
-        stats: {
-            maxSpeed,
-            distance
-        }
+        stats: { maxSpeed, distance, avgSpeed, duration, impactCount, peakAccel },
+        data: { speedLabels, speeds, axData, ayData, azData, accelLabels, coords }
     };
 
-    addSession(session);
-    console.log("✅ Session saved");
+    const sessions = getSessions();
+    sessions.push(session);
+    saveSessions(sessions);
 
-    renderSessions(); // 🔥 CRITICAL
+    renderSessions();
 }
 
 // =========================
-// RENDER SESSION LIST
+// HELPERS
+// =========================
+
+function movingAverage(data, window) {
+    return data.map((_, i) => {
+        let start = Math.max(0, i - window);
+        let subset = data.slice(start, i+1);
+        return subset.reduce((a,b)=>a+b,0)/subset.length;
+    });
+}
+
+function updateStats(maxSpeed, distance, avgSpeed, duration, impacts, peakAccel) {
+    document.getElementById("maxSpeed").textContent = maxSpeed.toFixed(2) + " m/s";
+    document.getElementById("distance").textContent = distance.toFixed(2) + " km";
+    document.getElementById("avgSpeed").textContent = avgSpeed.toFixed(2);
+    document.getElementById("duration").textContent = duration + " pts";
+
+    document.getElementById("impactCount").textContent = impacts;
+    document.getElementById("peakAccel").textContent = peakAccel.toFixed(2);
+}
+
+// =========================
+// SESSION UI (PRODUCT LEVEL)
 // =========================
 
 function renderSessions() {
     const container = document.getElementById("sessionList");
-    if (!container) {
-        console.log("❌ sessionList not found");
-        return;
-    }
-
     container.innerHTML = "";
 
-    const sessions = getSessions();
+    const sessions = getSessions().reverse();
 
-    console.log("Rendering sessions:", sessions.length);
-
-    sessions.slice().reverse().forEach(session => {
+    sessions.forEach(session => {
         const div = document.createElement("div");
-        div.className = "session-item";
+        div.className = "session-card";
 
         div.innerHTML = `
-            <strong>${session.name}</strong><br>
-            ${session.date}<br>
-            Speed: ${session.stats.maxSpeed.toFixed(2)} m/s
+            <div class="session-info">
+                <strong>${session.name}</strong>
+                <span>${session.date}</span>
+            </div>
+
+            <div class="session-stats">
+                <span>${session.stats.distance.toFixed(2)} km</span>
+                <span>${session.stats.maxSpeed.toFixed(2)} m/s</span>
+            </div>
+
+            <button class="delete-btn">✕</button>
         `;
 
-        div.onclick = () => {
-            console.log("Clicked:", session.id);
-            loadSession(session.id);
+        div.onclick = () => loadSession(session.id);
+
+        div.querySelector(".delete-btn").onclick = (e) => {
+            e.stopPropagation();
+            deleteSession(session.id);
         };
 
         container.appendChild(div);
@@ -193,134 +209,87 @@ function renderSessions() {
 // =========================
 
 function loadSession(id) {
-    const sessions = getSessions();
-    const session = sessions.find(s => s.id === id);
-
-    if (!session) {
-        console.log("❌ Session not found");
-        return;
-    }
+    const session = getSessions().find(s => s.id === id);
+    if (!session) return;
 
     const d = session.data;
 
     drawSpeedChart(d.speedLabels, d.speeds);
     drawAccelChart(d.accelLabels, d.axData, d.ayData, d.azData);
-    drawMap(d.coordinates);
+    drawMap(d.coords);
 
-    document.getElementById("maxSpeed").textContent =
-        session.stats.maxSpeed.toFixed(2) + " m/s";
-
-    document.getElementById("distance").textContent =
-        session.stats.distance.toFixed(2) + " km";
+    updateStats(
+        session.stats.maxSpeed,
+        session.stats.distance,
+        session.stats.avgSpeed,
+        session.stats.duration,
+        session.stats.impactCount,
+        session.stats.peakAccel
+    );
 }
 
 // =========================
-// SPEED CHART
+// CHARTS + MAP (UNCHANGED)
 // =========================
 
 function drawSpeedChart(labels, data) {
     if (speedChart) speedChart.destroy();
-
     speedChart = new Chart(document.getElementById("speedChart"), {
         type: "line",
-        data: {
-            labels: labels,
-            datasets: [{
-                label: "Speed (m/s)",
-                data: data,
-                borderColor: "#4dabf7",
-                borderWidth: 2,
-                tension: 0.3
-            }]
-        }
+        data: { labels, datasets: [{ data, borderColor: "#4dabf7", tension: 0.3 }] }
     });
 }
 
-// =========================
-// ACCEL CHART
-// =========================
-
 function drawAccelChart(labels, ax, ay, az) {
     if (accelChart) accelChart.destroy();
-
     accelChart = new Chart(document.getElementById("accelChart"), {
         type: "line",
         data: {
-            labels: labels,
+            labels,
             datasets: [
-                { label: "Ax", data: ax, borderColor: "#4dabf7" },
-                { label: "Ay", data: ay, borderColor: "#1c7ed6" },
-                { label: "Az", data: az, borderColor: "#74c0fc" }
+                { label:"Ax", data:ax, borderColor:"#4dabf7" },
+                { label:"Ay", data:ay, borderColor:"#1c7ed6" },
+                { label:"Az", data:az, borderColor:"#74c0fc" }
             ]
         }
     });
 }
 
-// =========================
-// MAP
-// =========================
-
 function drawMap(coords) {
     if (!coords.length) return;
 
-    const cleanCoords = coords.filter(c =>
-        !isNaN(c[0]) && !isNaN(c[1])
-    );
-
-    if (!cleanCoords.length) return;
-
     if (!map) {
-        map = L.map('map').setView(cleanCoords[0], 15);
-
+        map = L.map('map').setView(coords[0], 15);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
     }
 
-    if (polyline) {
-        map.removeLayer(polyline);
-    }
+    if (polyline) map.removeLayer(polyline);
 
-    polyline = L.polyline(cleanCoords, {
-        color: "#4dabf7",
-        weight: 4
-    }).addTo(map);
-
+    polyline = L.polyline(coords, { color:"#4dabf7", weight:4 }).addTo(map);
     map.fitBounds(polyline.getBounds());
 
-    setTimeout(() => map.invalidateSize(), 100);
+    setTimeout(()=>map.invalidateSize(),100);
 }
-
-// =========================
-// DISTANCE
-// =========================
 
 function calculateDistance(coords) {
     let total = 0;
-
     for (let i = 1; i < coords.length; i++) {
-        const [lat1, lon1] = coords[i - 1];
+        const [lat1, lon1] = coords[i-1];
         const [lat2, lon2] = coords[i];
 
         const R = 6371;
+        const dLat = (lat2-lat1)*Math.PI/180;
+        const dLon = (lon2-lon1)*Math.PI/180;
 
-        const dLat = (lat2 - lat1) * Math.PI / 180;
-        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dLat/2)**2 +
+            Math.cos(lat1*Math.PI/180) *
+            Math.cos(lat2*Math.PI/180) *
+            Math.sin(dLon/2)**2;
 
-        const a =
-            Math.sin(dLat / 2) ** 2 +
-            Math.cos(lat1 * Math.PI / 180) *
-            Math.cos(lat2 * Math.PI / 180) *
-            Math.sin(dLon / 2) ** 2;
-
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-        total += R * c;
+        total += R * (2*Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
     }
-
     return total;
 }
 
-// =========================
-// INITIAL LOAD
-// =========================
-
+// INIT
 renderSessions();
