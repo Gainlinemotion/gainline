@@ -1,40 +1,62 @@
-console.log("script loaded");
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Gainline</title>
 
-let chart;
-let map;
-let polyline;
+    <!-- CSS -->
+    <link rel="stylesheet" href="style.css">
 
-// FILE UPLOAD
-document.getElementById("fileInput").addEventListener("change", function(event) {
-    console.log("file selected");
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    const file = event.target.files[0];
-    if (!file) return;
+    <!-- Leaflet -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+</head>
 
-    const reader = new FileReader();
+<body>
 
-    reader.onload = function(e) {
-        const text = e.target.result;
-        processCSV(text);
-    };
+<header>
+    Gainline Dashboard
+</header>
 
-    reader.readAsText(file);
-});
+<div class="container">
 
-function processCSV(data) {
-    const lines = data.split("\n");
+    <!-- Upload -->
+    <div class="card">
+        <div class="label">Upload Session</div>
+        <input type="file" id="fileInput">
+    </div>
 
-    let maxSpeed = 0;
-    let speeds = [];
-    let labels = [];
-    let coordinates = [];
+    <!-- Stats -->
+    <div class="card">
+        <div class="label">Distance</div>
+        <div class="stat" id="distance">--</div>
+    </div>
 
-    for (let i = 1; i < lines.length; i++) {
-        const row = lines[i].trim().split(",");
+    <div class="card">
+        <div class="label">Max Speed</div>
+        <div class="stat" id="maxSpeed">--</div>
+    </div>
 
-        if (row.length < 4) continue;
+    <!-- Graph -->
+    <div class="card">
+        <div class="label">Speed Graph</div>
+        <canvas id="speedChart"></canvas>
+    </div>
 
-        const time = row[0];
+    <!-- Map -->
+    <div class="card">
+        <div class="label">Route Map</div>
+        <div id="map" style="height: 300px;"></div>
+    </div>
+
+</div>
+
+<script src="script.js"></script>
+
+</body>
+</html>        const time = row[0];
         const lat = parseFloat(row[1]);
         const lon = parseFloat(row[2]);
         const speed = parseFloat(row[3]);
