@@ -1,6 +1,3 @@
-function genericAnalysis(ax, ay, az) {
-    return {
-        impacts: 0,
-        peak: 0
-    };
+function genericAnalysis() {
+    return { impacts: 0, peak: 0 };
 }
