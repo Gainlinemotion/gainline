@@ -235,6 +235,27 @@ function calculateDistance(coords) {
 
     return total;
 }
+function renderSessions() {
+    const container = document.getElementById("sessionList");
+    container.innerHTML = "";
+
+    const sessions = getSessions();
+
+    sessions.reverse().forEach(session => {
+        const div = document.createElement("div");
+        div.className = "session-item";
+
+        div.innerHTML = `
+            <strong>${session.name}</strong><br>
+            ${session.date}<br>
+            Speed: ${session.stats.maxSpeed.toFixed(2)} m/s
+        `;
+
+        div.onclick = () => loadSession(session.id);
+
+        container.appendChild(div);
+    });
+}
 // =========================
 // SAVE SESSION
 // =========================
