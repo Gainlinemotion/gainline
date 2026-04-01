@@ -9,6 +9,8 @@ let polyline;
 
 document.getElementById("fileInput").addEventListener("change", function(event) {
     const file = event.target.files[0];
+    if (!file) return;
+
     const reader = new FileReader();
 
     reader.onload = function(e) {
@@ -117,6 +119,8 @@ function plotAcceleration(data) {
 
 function plotMap(data) {
     const coords = data.map(d => [d.lat, d.lon]);
+
+    if (!coords.length) return;
 
     if (!map) {
         map = L.map('map').setView(coords[0], 15);
