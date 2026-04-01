@@ -24,7 +24,8 @@ document.getElementById("fileInput").addEventListener("change", function(event) 
 
 function processCSV(data) {
     const lines = data.split("\n");
-
+    const row = lines[i].trim().split(",");
+    console.log("ROW:", row);
     let maxSpeed = 0;
     let speeds = [];
     let speedLabels = [];
