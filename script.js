@@ -22,7 +22,24 @@ document.getElementById("fileInput").addEventListener("change", function(event) 
 
     reader.readAsText(file);
 });
+// =========================
+// SESSION STORAGE
+// =========================
 
+function getSessions() {
+    const sessions = localStorage.getItem("gainline_sessions");
+    return sessions ? JSON.parse(sessions) : [];
+}
+
+function saveSessions(sessions) {
+    localStorage.setItem("gainline_sessions", JSON.stringify(sessions));
+}
+
+function addSession(session) {
+    const sessions = getSessions();
+    sessions.push(session);
+    saveSessions(sessions);
+}
 // =========================
 // PROCESS CSV
 // =========================
