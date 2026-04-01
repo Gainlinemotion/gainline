@@ -1,6 +1,7 @@
 console.log("script loaded");
 
 let chart;
+let accelChart;
 let map;
 let polyline;
 
@@ -32,7 +33,6 @@ function processCSV(data) {
     let accelLabels = [];
 
     let coordinates = [];
-
     let impactCount = 0;
 
     for (let i = 1; i < lines.length; i++) {
@@ -78,22 +78,66 @@ function processCSV(data) {
         }
     }
 
+    console.log("Parsed speeds:", speeds);
+    console.log("Parsed coords:", coordinates);
+    console.log("Impacts:", impactCount);
+
     // DISTANCE
     const distance = calculateDistance(coordinates);
 
     document.getElementById("maxSpeed").textContent = maxSpeed.toFixed(2) + " m/s";
     document.getElementById("distance").textContent = distance.toFixed(2) + " km";
 
-    // DRAW
-    drawChart(speedLabels, speeds);
+    // DRAW CHARTS
+    drawSpeedChart(speedLabels, speeds);
     drawAccelChart(accelLabels, accelData);
 
+    // MAP
     if (coordinates.length > 0) {
         drawMap(coordinates);
     }
-
-    console.log("Impacts:", impactCount);
 }
+
+// SPEED GRAPH
+function drawSpeedChart(labels, data) {
+    const ctx = document.getElementById("speedChart").getContext("2d");
+
+    if (chart) chart.destroy();
+
+    chart = new Chart(ctx, {
+        type: "line",
+        data: {
+            labels: labels,
+            datasets: [{
+                label: "Speed (m/s)",
+                data: data,
+                borderWidth: 2,
+                tension: 0.3
+            }]
+        }
+    });
+}
+
+// ACCEL GRAPH
+function drawAccelChart(labels, data) {
+    const ctx = document.getElementById("accelChart").getContext("2d");
+
+    if (accelChart) accelChart.destroy();
+
+    accelChart = new Chart(ctx, {
+        type: "line",
+        data: {
+            labels: labels,
+            datasets: [{
+                label: "Acceleration (m/s²)",
+                data: data,
+                borderWidth: 2,
+                tension: 0.3
+            }]
+        }
+    });
+}
+
 // MAP
 function drawMap(coords) {
     if (!map) {
@@ -110,28 +154,8 @@ function drawMap(coords) {
 
     map.fitBounds(polyline.getBounds());
 }
-//Acceleration
-function drawAccelChart(labels, data) {
-    const ctx = document.getElementById("accelChart").getContext("2d");
 
-    new Chart(ctx, {
-        type: "line",
-        data: {
-            labels: labels,
-            datasets: [{
-                label: "Acceleration (m/s²)",
-                data: data,
-                borderWidth: 2,
-                tension: 0.3
-            }]
-        },
-        options: {
-            responsive: true
-        }
-    });
-}
-
-// HAVERSINE DISTANCE
+// DISTANCE (HAVERSINE)
 function calculateDistance(coords) {
     let total = 0;
 
@@ -139,7 +163,7 @@ function calculateDistance(coords) {
         const [lat1, lon1] = coords[i - 1];
         const [lat2, lon2] = coords[i];
 
-        const R = 6371; // km
+        const R = 6371;
 
         const dLat = (lat2 - lat1) * Math.PI / 180;
         const dLon = (lon2 - lon1) * Math.PI / 180;
@@ -152,9 +176,7 @@ function calculateDistance(coords) {
 
         const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
-        const d = R * c;
-
-        total += d;
+        total += R * c;
     }
 
     return total;
