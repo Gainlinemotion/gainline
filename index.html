@@ -3,60 +3,36 @@
 <head>
     <title>Gainline</title>
 
-    <!-- CSS -->
+    <!-- Link CSS -->
     <link rel="stylesheet" href="style.css">
 
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <!-- Leaflet -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 </head>
 
 <body>
 
-<header>
-    Gainline Dashboard
-</header>
+<h1>Gainline Performance Tracker</h1>
 
-<div class="container">
+<input type="file" id="fileInput" accept=".csv">
 
-    <!-- Upload -->
-    <div class="card">
-        <div class="label">Upload Session</div>
-        <input type="file" id="fileInput">
-    </div>
+<div class="section">
+    <h2>Speed</h2>
+    <canvas id="speedChart"></canvas>
+</div>
 
-    <!-- Stats -->
-    <div class="card">
-        <div class="label">Distance</div>
-        <div class="stat" id="distance">--</div>
-    </div>
+<div class="section">
+    <h2>Acceleration</h2>
+    <canvas id="accelChart"></canvas>
+</div>
 
-    <div class="card">
-        <div class="label">Max Speed</div>
-        <div class="stat" id="maxSpeed">--</div>
-    </div>
-
-    <!-- Speed Graph -->
-    <div class="card">
-        <div class="label">Speed Graph</div>
-        <canvas id="speedChart"></canvas>
-    </div>
-
-    <!-- Acceleration Graph -->
-    <div class="card">
-        <div class="label">Acceleration (G-Force)</div>
-        <canvas id="accelChart"></canvas>
-    </div>
-
-    <!-- Map -->
-    <div class="card">
-        <div class="label">Route Map</div>
-        <div id="map" style="height: 300px;"></div>
-    </div>
-
+<div class="section">
+    <h2>Route</h2>
+    <div id="map"></div>
 </div>
 
 <script src="script.js"></script>
